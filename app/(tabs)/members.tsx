@@ -4,18 +4,20 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
+  Modal,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 import ApiService from '../../services/api';
-
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MembersScreen() {
   const insets = useSafeAreaInsets();
@@ -27,6 +29,8 @@ export default function MembersScreen() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalMembers, setTotalMembers] = useState(0);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const fetchMembers = useCallback(async (p = 1, s = '') => {
     try {
@@ -84,11 +88,25 @@ export default function MembersScreen() {
   };
 
   const renderMember = ({ item }: any) => (
-    <View style={styles.memberCard}>
+    <TouchableOpacity 
+      style={styles.memberCard} 
+      activeOpacity={0.7}
+      onPress={() => {
+        setSelectedMember(item);
+        setModalVisible(true);
+      }}
+    >
       <View style={[styles.avatar, { backgroundColor: getLevelColor(item.level_name) + '20' }]}>
-        <Text style={[styles.avatarText, { color: getLevelColor(item.level_name) }]}>
-          {item.full_name?.charAt(0)?.toUpperCase()}
-        </Text>
+        {item.avatar_url ? (
+          <Image 
+            source={{ uri: item.avatar_url.startsWith('http') ? item.avatar_url : ApiService.getBaseUrl() + item.avatar_url }} 
+            style={{ width: '100%', height: '100%', borderRadius: 16 }} 
+          />
+        ) : (
+          <Text style={[styles.avatarText, { color: getLevelColor(item.level_name) }]}>
+            {item.full_name?.charAt(0)?.toUpperCase()}
+          </Text>
+        )}
       </View>
       <View style={styles.memberInfo}>
         <View style={styles.memberHeader}>
@@ -112,11 +130,12 @@ export default function MembersScreen() {
           )}
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Members</Text>
@@ -161,9 +180,109 @@ export default function MembersScreen() {
               <Text style={styles.emptyText}>No members found</Text>
             </View>
           )}
+          onEndReached={() => {
+            if (members.length < totalMembers && !loading && !refreshing) {
+              const nextPage = page + 1;
+              setPage(nextPage);
+              fetchMembers(nextPage, search);
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={() => 
+            members.length < totalMembers && !refreshing ? (
+              <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} />
+            ) : null
+          }
         />
       )}
-    </View>
+
+      {/* Member Details Modal */}
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Member Details</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Ionicons name="close" size={24} color={Colors.dark.text} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedMember && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.modalProfileHeader}>
+                  <View style={[styles.modalAvatar, { borderColor: getLevelColor(selectedMember.level_name) }]}>
+                    {selectedMember.avatar_url ? (
+                      <Image 
+                        source={{ uri: selectedMember.avatar_url.startsWith('http') ? selectedMember.avatar_url : ApiService.getBaseUrl() + selectedMember.avatar_url }} 
+                        style={{ width: '100%', height: '100%', borderRadius: 40 }} 
+                      />
+                    ) : (
+                      <Text style={[styles.modalAvatarText, { color: getLevelColor(selectedMember.level_name) }]}>
+                        {selectedMember.full_name?.charAt(0)?.toUpperCase()}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.modalName}>{selectedMember.full_name}</Text>
+                  <View style={[styles.levelPill, { backgroundColor: getLevelColor(selectedMember.level_name) + '20', marginTop: 4, paddingHorizontal: 12, paddingVertical: 4 }]}>
+                    <Ionicons name={getLevelIcon(selectedMember.level_name)} size={12} color={getLevelColor(selectedMember.level_name)} />
+                    <Text style={[styles.levelPillText, { color: getLevelColor(selectedMember.level_name), fontSize: 12 }]}>{selectedMember.level_name} Level</Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailsGrid}>
+                  <View style={styles.detailCard}>
+                    <Text style={styles.detailLabel}>Member ID</Text>
+                    <Text style={styles.detailValue}>{selectedMember.member_id}</Text>
+                  </View>
+                  <View style={styles.detailCard}>
+                    <Text style={styles.detailLabel}>Total Points</Text>
+                    <Text style={[styles.detailValue, { color: Colors.primary }]}>{selectedMember.total_points}</Text>
+                  </View>
+                  <View style={styles.detailCard}>
+                    <Text style={styles.detailLabel}>Role</Text>
+                    <Text style={[styles.detailValue, { textTransform: 'capitalize' }]}>{selectedMember.role}</Text>
+                  </View>
+                  <View style={styles.detailCard}>
+                    <Text style={styles.detailLabel}>Contributions</Text>
+                    <Text style={[styles.detailValue, { color: Colors.success }]}>{selectedMember.contributions_count}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.contactSection}>
+                  <Text style={styles.sectionTitle}>Contact Info</Text>
+                  <View style={styles.contactRow}>
+                    <Ionicons name="call-outline" size={20} color={Colors.dark.textMuted} />
+                    <Text style={styles.contactText}>{selectedMember.phone}</Text>
+                  </View>
+                  <View style={styles.contactRow}>
+                    <Ionicons name="mail-outline" size={20} color={Colors.dark.textMuted} />
+                    <Text style={styles.contactText}>{selectedMember.email}</Text>
+                  </View>
+                  {selectedMember.occupation && (
+                    <View style={styles.contactRow}>
+                      <Ionicons name="briefcase-outline" size={20} color={Colors.dark.textMuted} />
+                      <Text style={styles.contactText}>{selectedMember.occupation}</Text>
+                    </View>
+                  )}
+                  <View style={styles.contactRow}>
+                    <Ionicons name="calendar-outline" size={20} color={Colors.dark.textMuted} />
+                    <Text style={styles.contactText}>Joined {new Date(selectedMember.joined_at).toLocaleDateString()}</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity 
+                  style={styles.closeBtn}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.closeBtnText}>Close</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+    </SafeAreaView>
   );
 }
 
@@ -211,4 +330,31 @@ const styles = StyleSheet.create({
   statText: { fontSize: 11, color: Colors.dark.textMuted },
   emptyState: { alignItems: 'center', paddingVertical: 60, gap: 12 },
   emptyText: { fontSize: 15, color: Colors.dark.textMuted },
+  modalOverlay: { flex: 1, backgroundColor: Colors.dark.overlay, justifyContent: 'flex-end' },
+  modalContent: {
+    backgroundColor: Colors.dark.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    padding: 24, paddingBottom: 40, maxHeight: '85%',
+  },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.dark.text },
+  modalProfileHeader: { alignItems: 'center', marginBottom: 24 },
+  modalAvatar: { 
+    width: 80, height: 80, borderRadius: 40, borderWidth: 2, 
+    justifyContent: 'center', alignItems: 'center', marginBottom: 12, backgroundColor: Colors.dark.inputBg 
+  },
+  modalAvatarText: { fontSize: 32, fontWeight: '700' },
+  modalName: { fontSize: 20, fontWeight: '700', color: Colors.dark.text },
+  detailsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
+  detailCard: { 
+    width: '48%', backgroundColor: Colors.dark.inputBg, padding: 14, 
+    borderRadius: 14, borderWidth: 1, borderColor: Colors.dark.border 
+  },
+  detailLabel: { fontSize: 11, color: Colors.dark.textMuted, marginBottom: 4 },
+  detailValue: { fontSize: 15, fontWeight: '700', color: Colors.dark.text },
+  contactSection: { backgroundColor: Colors.dark.inputBg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: Colors.dark.border, marginBottom: 24 },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: Colors.dark.text, marginBottom: 16 },
+  contactRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  contactText: { fontSize: 14, color: Colors.dark.textSecondary },
+  closeBtn: { backgroundColor: Colors.dark.border, paddingVertical: 14, borderRadius: 14, alignItems: 'center' },
+  closeBtnText: { color: Colors.dark.text, fontSize: 15, fontWeight: '700' }
 });

@@ -1,15 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
+  Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 import ApiService from '../../services/api';
@@ -21,12 +28,21 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { showAlert } = useAlert();
   const [profile, setProfile] = useState<any>(null);
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [bankForm, setBankForm] = useState({
+    bank_name: '',
+    account_no: '',
+    ifsc_code: '',
+    upi_id: '',
+  });
 
-  useEffect(() => {
-    if (user) {
+
+  useFocusEffect(
+    useCallback(() => {
       fetchProfile();
-    }
-  }, [user]);
+    }, [])
+  );
 
   if (!user) return null;
 
@@ -34,8 +50,29 @@ export default function ProfileScreen() {
     try {
       const res = await ApiService.getProfile();
       setProfile(res.data);
+      setBankForm({
+        bank_name: res.data.bank_name || '',
+        account_no: res.data.account_no || '',
+        ifsc_code: res.data.ifsc_code || '',
+        upi_id: res.data.upi_id || '',
+      });
     } catch (e) {
       console.log('Profile fetch error:', e);
+    }
+  };
+
+  const handleUpdateBank = async () => {
+    setSubmitting(true);
+    try {
+      await ApiService.updateProfile(bankForm);
+      showAlert({ title: 'Success', message: 'Payment details updated!', type: 'success' });
+      setShowBankModal(false);
+      fetchProfile();
+      refreshProfile(); // Sync global auth context with new banking info!
+    } catch (e: any) {
+      showAlert({ title: 'Error', message: e.message, type: 'error' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -72,17 +109,32 @@ export default function ProfileScreen() {
   const p = profile || user;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
         <LinearGradient
           colors={['rgba(99, 102, 241, 0.15)', Colors.dark.background]}
           style={styles.headerGradient}
         >
+
           <View style={styles.header}>
-            <View style={[styles.avatar, { borderColor: getLevelColor(p?.level_name || 'Bronze') }]}>
-              <Text style={styles.avatarText}>{p?.full_name?.charAt(0)?.toUpperCase() || '?'}</Text>
-            </View>
+            <TouchableOpacity
+              style={[styles.avatar, { borderColor: getLevelColor(p?.level_name || 'Bronze') }]}
+              onPress={() => router.push('/edit-profile')}
+            >
+              {p?.avatar_url ? (
+                <Image
+                  source={{ uri: p.avatar_url.startsWith('http') ? p.avatar_url : ApiService.getBaseUrl() + p.avatar_url }}
+                  style={{ width: '100%', height: '100%', borderRadius: 24 }}
+                />
+              ) : (
+                <Text style={styles.avatarText}>{p?.full_name?.charAt(0)?.toUpperCase() || '?'}</Text>
+              )}
+              <View style={styles.editBadge}>
+                <Ionicons name="pencil" size={12} color="#fff" />
+              </View>
+            </TouchableOpacity>
             <Text style={styles.name}>{p?.full_name}</Text>
             <Text style={styles.email}>{p?.email}</Text>
             <View style={styles.idRow}>
@@ -159,7 +211,12 @@ export default function ProfileScreen() {
 
         {/* Personal Info */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Personal Information</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={styles.infoTitle}>Personal Information</Text>
+            <TouchableOpacity onPress={() => router.push('/edit-profile')}>
+              <Text style={{ color: Colors.primary, fontSize: 13, fontWeight: '600' }}>Edit</Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Phone</Text>
             <Text style={styles.infoValue}>{p?.phone}</Text>
@@ -178,6 +235,32 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Bank Details */}
+        <View style={styles.infoCard}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={styles.infoTitle}>Payment Details (for loans)</Text>
+            <TouchableOpacity onPress={() => setShowBankModal(true)}>
+              <Text style={{ color: Colors.primary, fontSize: 13, fontWeight: '600' }}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Bank Name</Text>
+            <Text style={styles.infoValue}>{p?.bank_name || '-'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Acc No</Text>
+            <Text style={styles.infoValue}>{p?.account_no || '-'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>IFSC</Text>
+            <Text style={styles.infoValue}>{p?.ifsc_code || '-'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>UPI ID</Text>
+            <Text style={styles.infoValue}>{p?.upi_id || '-'}</Text>
+          </View>
+        </View>
+
         {/* Logout */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.7}>
           <Ionicons name="log-out-outline" size={20} color={Colors.error} />
@@ -186,7 +269,40 @@ export default function ProfileScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+
+      {/* Bank Modal */}
+      <Modal visible={showBankModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Update Payment Details</Text>
+              <TouchableOpacity onPress={() => setShowBankModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.dark.text} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.fieldLabel}>Bank Name</Text>
+            <TextInput style={styles.modalInput} placeholder="State Bank of India" placeholderTextColor={Colors.dark.textMuted} value={bankForm.bank_name} onChangeText={v => setBankForm({ ...bankForm, bank_name: v })} />
+
+            <Text style={styles.fieldLabel}>Account Number</Text>
+            <TextInput style={styles.modalInput} placeholder="1234567890" placeholderTextColor={Colors.dark.textMuted} value={bankForm.account_no} onChangeText={v => setBankForm({ ...bankForm, account_no: v })} keyboardType="numeric" />
+
+            <Text style={styles.fieldLabel}>IFSC Code</Text>
+            <TextInput style={styles.modalInput} placeholder="SBIN0001234" placeholderTextColor={Colors.dark.textMuted} value={bankForm.ifsc_code} onChangeText={v => setBankForm({ ...bankForm, ifsc_code: v })} autoCapitalize="characters" />
+
+            <Text style={styles.fieldLabel}>UPI ID</Text>
+            <TextInput style={styles.modalInput} placeholder="name@upi" placeholderTextColor={Colors.dark.textMuted} value={bankForm.upi_id} onChangeText={v => setBankForm({ ...bankForm, upi_id: v })} autoCapitalize="lowercase" />
+
+            <TouchableOpacity style={[styles.submitButton, submitting && { opacity: 0.7 }]} onPress={handleUpdateBank} disabled={submitting}>
+              <LinearGradient colors={Colors.gradients.primary as any} style={styles.submitGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Save Details</Text>}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+
   );
 }
 
@@ -197,7 +313,13 @@ const styles = StyleSheet.create({
   avatar: {
     width: 80, height: 80, borderRadius: 24, borderWidth: 3,
     backgroundColor: Colors.dark.surface, justifyContent: 'center', alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 12, position: 'relative'
+  },
+  editBadge: {
+    position: 'absolute', bottom: -4, right: -4,
+    backgroundColor: Colors.primary, width: 22, height: 22,
+    borderRadius: 11, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: Colors.dark.background
   },
   avatarText: { fontSize: 32, fontWeight: '700', color: Colors.dark.text },
   name: { fontSize: 22, fontWeight: '700', color: Colors.dark.text },
@@ -259,4 +381,21 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.error + '30',
   },
   logoutText: { fontSize: 15, fontWeight: '600', color: Colors.error },
+  modalOverlay: { flex: 1, backgroundColor: Colors.dark.overlay, justifyContent: 'flex-end' },
+  modalContent: {
+    backgroundColor: Colors.dark.surface, borderTopLeftRadius: 28,
+    borderTopRightRadius: 28, padding: 24, paddingBottom: 40,
+  },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.dark.text },
+  fieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.dark.textSecondary, marginBottom: 8 },
+  modalInput: {
+    backgroundColor: Colors.dark.inputBg, borderRadius: 14, paddingHorizontal: 16,
+    height: 50, color: Colors.dark.text, fontSize: 15,
+    borderWidth: 1, borderColor: Colors.dark.border, marginBottom: 16,
+  },
+  submitButton: { borderRadius: 14, overflow: 'hidden', marginTop: 10 },
+  submitGradient: { justifyContent: 'center', alignItems: 'center', paddingVertical: 16 },
+  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
+

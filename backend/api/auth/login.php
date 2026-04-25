@@ -27,7 +27,11 @@ if (!password_verify($data['password'], $user['password_hash'])) {
 }
 
 if (!$user['is_active']) {
-    sendError("Account has been deactivated. Contact admin.", 403);
+    if (!$user['is_verified']) {
+        sendError("Your account is pending admin approval. Please wait.", 403);
+    } else {
+        sendError("Account has been deactivated. Contact admin.", 403);
+    }
 }
 
 // Update last login
@@ -57,6 +61,10 @@ sendSuccess([
         'badge_icon' => $user['badge_icon'],
         'total_points' => $user['total_points'],
         'avatar_url' => $user['avatar_url'],
+        'bank_name' => $user['bank_name'],
+        'account_no' => $user['account_no'],
+        'ifsc_code' => $user['ifsc_code'],
+        'upi_id' => $user['upi_id'],
         'is_verified' => $user['is_verified'],
         'joined_at' => $user['joined_at']
     ]

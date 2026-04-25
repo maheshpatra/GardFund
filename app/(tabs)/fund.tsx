@@ -3,6 +3,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
+  Linking,
   Modal,
   RefreshControl,
   ScrollView,
@@ -12,7 +14,11 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+
+
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../constants/Colors';
+
 import { useAlert } from '../../contexts/AlertContext';
 import { useAuth } from '../../contexts/AuthContext';
 import ApiService from '../../services/api';
@@ -33,6 +39,8 @@ export default function FundScreen() {
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [transactionRef, setTransactionRef] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [settings, setSettings] = useState<any>(null);
+
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
   const fetchContributions = useCallback(async () => {
@@ -48,9 +56,17 @@ export default function FundScreen() {
     }
   }, [selectedYear]);
 
+  const fetchSettings = async () => {
+    try {
+      const res = await ApiService.getSettings();
+      setSettings(res.data);
+    } catch (e) { console.log('Fund settings error:', e); }
+  };
+
   useEffect(() => {
     if (user) {
       fetchContributions();
+      fetchSettings();
     }
   }, [fetchContributions, user]);
 
@@ -64,6 +80,35 @@ export default function FundScreen() {
 
   const hasCurrentMonthContribution = () => {
     return contributions.some(c => c.month_year === getCurrentMonthYear());
+  };
+
+  const handleOpenUPI = async (app: 'generic' | 'phonepe' | 'gpay') => {
+    if (!settings?.upi_id) {
+      showAlert({ title: 'Error', message: 'Fund UPI ID not configured.', type: 'error' });
+      return;
+    }
+
+    const upiId = settings.upi_id;
+    const amount = '1000'; // Monthly contribution amount
+    const payeeName = "GardFund Contribution";
+    const transactionNote = `Contribution - ${getMonthName(getCurrentMonthYear())}`;
+    
+    let url = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+
+    if (app === 'phonepe') url = url.replace('upi://', 'phonepe://');
+    if (app === 'gpay') url = url.replace('upi://', 'tez://');
+
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        const genericUrl = url.replace(/^(phonepe|tez):\/\//, 'upi://');
+        await Linking.openURL(genericUrl);
+      }
+    } catch (e) {
+      showAlert({ title: 'Error', message: 'Could not open UPI app', type: 'error' });
+    }
   };
 
   const handlePay = async () => {
@@ -124,11 +169,12 @@ export default function FundScreen() {
   });
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
       >
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Contributions</Text>
@@ -259,7 +305,38 @@ export default function FundScreen() {
               <Text style={styles.amountMonth}>For {getMonthName(getCurrentMonthYear())}</Text>
             </View>
 
+            {paymentMethod === 'upi' && settings?.qr_code_url && (
+              <View style={styles.qrContainer}>
+                <Image source={{ uri: settings.qr_code_url }} style={styles.qrCode} resizeMode="contain" />
+                <Text style={styles.upiText}>UPI ID: {settings.upi_id}</Text>
+                
+                <View style={styles.upiAppRow}>
+                  <TouchableOpacity style={styles.upiAppButton} onPress={() => handleOpenUPI('phonepe')}>
+                    <LinearGradient colors={['#5f259f', '#4b1d7e']} style={styles.upiAppGradient}>
+                      <Text style={styles.upiAppText}>PhonePe</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.upiAppButton} onPress={() => handleOpenUPI('gpay')}>
+                    <LinearGradient colors={['#4285F4', '#34a853']} style={styles.upiAppGradient}>
+                      <Text style={styles.upiAppText}>GPay</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.scanText}>Scan or use buttons above to pay</Text>
+              </View>
+            )}
+
+
+            {paymentMethod === 'bank_transfer' && settings?.fund_bank_details && (
+              <View style={styles.bankDetailContainer}>
+                <Text style={styles.bankDetailTitle}>Bank Details</Text>
+                <Text style={styles.bankDetailText}>{settings.fund_bank_details}</Text>
+              </View>
+            )}
+
             <Text style={styles.fieldLabel}>Payment Method</Text>
+
             <View style={styles.methodGrid}>
               {['upi', 'bank_transfer', 'cash'].map(method => (
                 <TouchableOpacity
@@ -311,7 +388,7 @@ export default function FundScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -394,6 +471,13 @@ const styles = StyleSheet.create({
   amountLabel: { fontSize: 13, color: Colors.dark.textSecondary },
   amountValue: { fontSize: 36, fontWeight: '800', color: Colors.primary, marginVertical: 4 },
   amountMonth: { fontSize: 13, color: Colors.dark.textSecondary },
+  qrContainer: { alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, padding: 16, marginVertical: 12 },
+  qrCode: { width: 150, height: 150 },
+  upiText: { fontSize: 14, fontWeight: '700', color: '#000', marginTop: 10 },
+  scanText: { fontSize: 11, color: '#666', marginTop: 2 },
+  bankDetailContainer: { backgroundColor: Colors.dark.inputBg, borderRadius: 12, padding: 14, marginVertical: 12, borderWidth: 1, borderColor: Colors.dark.border },
+  bankDetailTitle: { fontSize: 12, fontWeight: '700', color: Colors.dark.textSecondary, marginBottom: 4 },
+  bankDetailText: { fontSize: 13, color: Colors.dark.text, lineHeight: 18 },
   fieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.dark.textSecondary, marginBottom: 8 },
   methodGrid: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   methodItem: {
@@ -411,4 +495,9 @@ const styles = StyleSheet.create({
   submitButton: { borderRadius: 14, overflow: 'hidden' },
   submitGradient: { justifyContent: 'center', alignItems: 'center', paddingVertical: 16 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  upiAppRow: { flexDirection: 'row', gap: 10, marginTop: 15, marginBottom: 5, width: '100%' },
+  upiAppButton: { flex: 1, borderRadius: 12, overflow: 'hidden' },
+  upiAppGradient: { paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
+  upiAppText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 });
+

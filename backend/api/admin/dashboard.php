@@ -15,7 +15,7 @@ $stmt = $db->query("SELECT c.*, u.full_name, u.member_id FROM contributions c JO
 $pendingContributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Pending loans
-$stmt = $db->query("SELECT l.*, u.full_name, u.member_id FROM loans l JOIN users u ON l.user_id = u.id WHERE l.status = 'pending' ORDER BY l.requested_at DESC");
+$stmt = $db->query("SELECT l.*, u.full_name, u.member_id, u.upi_id, u.bank_name, u.account_no, u.ifsc_code FROM loans l JOIN users u ON l.user_id = u.id WHERE l.status = 'pending' ORDER BY l.requested_at DESC");
 $pendingLoans = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Pending repayments
@@ -36,11 +36,16 @@ $stmt = $db->prepare("SELECT u.id, u.member_id, u.full_name, u.phone, u.level_id
 $stmt->execute([$currentMonth]);
 $defaulters = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Pending users
+$stmt = $db->query("SELECT id, member_id, full_name, email, phone, aadhaar_no, pan_number, joined_at FROM users WHERE is_active = 0 AND role = 'member' ORDER BY joined_at DESC");
+$pendingUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 // Stats summary
 $stats = [
     'pending_contributions' => count($pendingContributions),
     'pending_loans' => count($pendingLoans),
     'pending_repayments' => count($pendingRepayments),
+    'pending_users' => count($pendingUsers),
     'overdue_loans' => count($overdueLoans),
     'defaulters' => count($defaulters)
 ];
@@ -50,6 +55,7 @@ sendSuccess([
     'pending_contributions' => $pendingContributions,
     'pending_loans' => $pendingLoans,
     'pending_repayments' => $pendingRepayments,
+    'pending_users' => $pendingUsers,
     'overdue_loans' => $overdueLoans,
     'defaulters' => $defaulters
 ], 'Admin dashboard fetched');

@@ -50,6 +50,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
         ApiService.setToken(storedToken);
+        
+        // Sync the latest profile natively in the background
+        try {
+          const response = await ApiService.getProfile();
+          setUser(response.data);
+          await AsyncStorage.setItem('auth_user', JSON.stringify(response.data));
+        } catch (syncErr) {
+          console.log('Background auth sync failed:', syncErr);
+        }
       }
     } catch (e) {
       console.log('Error loading auth:', e);
@@ -69,13 +78,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const register = async (data: any) => {
-    const response = await ApiService.register(data);
-    const { token: newToken, user: userData } = response.data;
-    setToken(newToken);
-    setUser(userData);
-    ApiService.setToken(newToken);
-    await AsyncStorage.setItem('auth_token', newToken);
-    await AsyncStorage.setItem('auth_user', JSON.stringify(userData));
+    await ApiService.register(data);
+    // User is no longer logged in automatically. They must wait for admin approval.
   };
 
   const logout = async () => {

@@ -1,7 +1,7 @@
 -- GardFund Database Schema
 -- Group Fund Management System
 
-CREATE DATABASE IF NOT EXISTS gardfund_db;
+CREATE DATABASE IF NOT EXISTS gardfund_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE gardfund_db;
 
 -- =============================================
@@ -26,8 +26,14 @@ CREATE TABLE IF NOT EXISTS users (
     is_verified TINYINT(1) DEFAULT 0,
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    last_login TIMESTAMP NULL
-);
+    last_login TIMESTAMP NULL,
+    bank_name VARCHAR(100) DEFAULT NULL,
+    account_no VARCHAR(30) DEFAULT NULL,
+    ifsc_code VARCHAR(20) DEFAULT NULL,
+    upi_id VARCHAR(100) DEFAULT NULL,
+    aadhaar_no VARCHAR(12) DEFAULT NULL,
+    pan_number VARCHAR(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
 -- LEVELS TABLE (Level-Up Program)
@@ -79,6 +85,7 @@ CREATE TABLE IF NOT EXISTS loans (
     monthly_emi DECIMAL(12,2) DEFAULT 0,
     total_repaid DECIMAL(12,2) DEFAULT 0,
     remaining_amount DECIMAL(12,2) DEFAULT 0,
+    disbursement_method ENUM('upi', 'bank_account') DEFAULT 'bank_account',
     status ENUM('pending', 'approved', 'rejected', 'active', 'completed', 'overdue') DEFAULT 'pending',
     approved_by INT DEFAULT NULL,
     guarantor_id INT DEFAULT NULL,
@@ -91,7 +98,7 @@ CREATE TABLE IF NOT EXISTS loans (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (guarantor_id) REFERENCES users(id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
 -- LOAN REPAYMENTS TABLE
@@ -111,7 +118,7 @@ CREATE TABLE IF NOT EXISTS loan_repayments (
     FOREIGN KEY (loan_id) REFERENCES loans(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (confirmed_by) REFERENCES users(id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
 -- FUND TRANSACTIONS TABLE
@@ -130,7 +137,7 @@ CREATE TABLE IF NOT EXISTS fund_transactions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
 -- HOSPITALS TABLE
@@ -173,7 +180,17 @@ CREATE TABLE IF NOT EXISTS notifications (
     data JSON DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- SETTINGS TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    setting_key VARCHAR(50) UNIQUE NOT NULL,
+    setting_value TEXT DEFAULT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
 -- POINT HISTORY TABLE
@@ -216,3 +233,11 @@ INSERT INTO hospitals (name, address, city, state, pincode, phone, emergency_pho
 -- =============================================
 INSERT INTO users (member_id, full_name, email, phone, password_hash, role, is_verified, level_id, total_points) VALUES
 ('GF001', 'Admin User', 'admin@gardfund.com', '9999999999', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 1, 5, 1000);
+
+-- =============================================
+-- DEFAULT SETTINGS
+-- =============================================
+INSERT IGNORE INTO settings (setting_key, setting_value) VALUES 
+('qr_code_url', 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=example'),
+('upi_id', 'fund@upi'),
+('fund_bank_details', 'Fund Bank Details: Name, Acc, IFSC');

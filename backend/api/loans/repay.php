@@ -44,9 +44,13 @@ $stmt->execute([
 // Notify admins
 $admins = $db->query("SELECT id FROM users WHERE role IN ('admin', 'treasurer')")->fetchAll(PDO::FETCH_ASSOC);
 foreach ($admins as $admin) {
-    createNotification($db, $admin['id'], 'Loan Repayment', 
+    createNotification(
+        $db,
+        $admin['id'],
+        'Loan Repayment',
         $user['member_id'] . ' made a repayment of ₹' . number_format($data['amount']) . ' for loan #' . $data['loan_id'],
-        'loan');
+        'loan'
+    );
 }
 
 sendSuccess(null, 'Repayment submitted for approval', 201);

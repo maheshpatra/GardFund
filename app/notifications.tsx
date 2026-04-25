@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -10,9 +11,12 @@ import {
   View
 } from 'react-native';
 import Colors from '../constants/Colors';
+import { useAuth } from '../contexts/AuthContext';
 import ApiService from '../services/api';
 
 export default function NotificationsScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,6 +45,43 @@ export default function NotificationsScreen() {
     } catch (e) { console.log(e); }
   };
 
+  const handleNotificationClick = async (item: any) => {
+    // 1. Mark as read on backend if unread
+    if (!item.is_read) {
+      try {
+        await ApiService.markNotificationsRead(item.id);
+        // Instant visual update
+        setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, is_read: 1 } : n));
+        setUnreadCount(c => Math.max(0, c - 1));
+      } catch (e) {
+        console.log("Failed to mark read", e);
+      }
+    }
+
+    // Admin redirect override
+    if (user?.role === 'admin' && (item.type === 'loan' || item.type === 'contribution')) {
+      router.push('/admin');
+      return;
+    }
+
+    // 2. Navigate based on notification type
+    switch (item.type) {
+      case 'loan':
+        router.push('/loans');
+        break;
+      case 'contribution':
+        router.push('/(tabs)/fund');
+        break;
+      case 'reward':
+      case 'reminder':
+        router.push('/(tabs)/profile');
+        break;
+      default:
+        // general/alert do nothing or show modal (can be enhanced later)
+        break;
+    }
+  };
+
   const getTypeIcon = (type: string): { name: any; color: string } => {
     const map: Record<string, { name: any; color: string }> = {
       contribution: { name: 'card', color: Colors.success },
@@ -64,7 +105,11 @@ export default function NotificationsScreen() {
   const renderNotification = ({ item }: any) => {
     const typeInfo = getTypeIcon(item.type);
     return (
-      <View style={[styles.notifCard, !item.is_read && styles.unreadCard]}>
+      <TouchableOpacity 
+        style={[styles.notifCard, !item.is_read && styles.unreadCard]}
+        onPress={() => handleNotificationClick(item)}
+        activeOpacity={0.7}
+      >
         <View style={[styles.notifIcon, { backgroundColor: typeInfo.color + '15' }]}>
           <Ionicons name={typeInfo.name} size={20} color={typeInfo.color} />
         </View>
@@ -76,7 +121,7 @@ export default function NotificationsScreen() {
           <Text style={styles.notifMessage}>{item.message}</Text>
           <Text style={styles.notifTime}>{timeAgo(item.created_at)}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 

@@ -37,6 +37,8 @@ export default function RegisterScreen() {
     confirmPassword: '',
     occupation: '',
     emergency_contact: '',
+    aadhaar_no: '',
+    pan_number: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -75,7 +77,12 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await register(form);
-      router.replace('/(tabs)');
+      showAlert({
+        title: 'Registration Successful',
+        message: 'Your account has been created. Please wait for admin approval to log in.',
+        type: 'success',
+      });
+      router.replace('/(auth)/login');
     } catch (e: any) {
       showAlert({
         title: 'Registration Failed',
@@ -122,6 +129,12 @@ export default function RegisterScreen() {
             <InputField icon="call-outline" placeholder="Phone Number" value={form.phone} onChangeText={(v: string) => updateForm('phone', v)} keyboardType="phone-pad" required />
             <InputField icon="briefcase-outline" placeholder="Occupation" value={form.occupation} onChangeText={(v: string) => updateForm('occupation', v)} />
             <InputField icon="call-outline" placeholder="Emergency Contact" value={form.emergency_contact} onChangeText={(v: string) => updateForm('emergency_contact', v)} keyboardType="phone-pad" />
+          </View>
+
+          <Text style={styles.sectionTitle}>Identity Verification</Text>
+          <View style={styles.inputGroup}>
+            <InputField icon="card-outline" placeholder="Aadhaar Number (12 digits)" value={form.aadhaar_no} onChangeText={(v: string) => updateForm('aadhaar_no', v)} keyboardType="numeric" required />
+            <InputField icon="wallet-outline" placeholder="PAN Number" value={form.pan_number} onChangeText={(v: string) => updateForm('pan_number', v)} required />
           </View>
 
           <Text style={styles.sectionTitle}>Security</Text>

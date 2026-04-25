@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Modal,
   RefreshControl,
   ScrollView,
@@ -13,10 +14,14 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+
 import Colors from '../constants/Colors';
 import ApiService from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { useAlert } from '../contexts/AlertContext';
 
 export default function LoansScreen() {
+  const { showAlert } = useAlert();
   const [loans, setLoans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -26,11 +31,14 @@ export default function LoansScreen() {
   const [selectedLoan, setSelectedLoan] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [loanForm, setLoanForm] = useState({
-    loan_type: 'emergency', amount: '', purpose: '', repayment_months: '6',
+    loan_type: 'emergency', amount: '', purpose: '', repayment_months: '6', disbursement_method: 'bank_account'
   });
   const [repayForm, setRepayForm] = useState({
     amount: '', payment_method: 'upi', transaction_ref: '',
   });
+  const [settings, setSettings] = useState<any>(null);
+  const { user } = useAuth();
+
 
   const fetchLoans = useCallback(async () => {
     try {
@@ -45,13 +53,75 @@ export default function LoansScreen() {
     }
   }, [activeTab]);
 
-  useEffect(() => { fetchLoans(); }, [fetchLoans]);
+  useEffect(() => { 
+    fetchLoans(); 
+    fetchSettings();
+  }, [fetchLoans]);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await ApiService.getSettings();
+      setSettings(res.data);
+    } catch (e) {
+      console.log('Settings error:', e);
+    }
+  };
+
+  const handleOpenUPI = async (app: 'generic' | 'phonepe' | 'gpay') => {
+    if (!repayForm.amount || isNaN(parseFloat(repayForm.amount))) {
+      showAlert({ title: 'Error', message: 'Please enter a valid amount first', type: 'error' });
+      return;
+    }
+    if (!settings?.upi_id) {
+      showAlert({ title: 'Error', message: 'Fund UPI ID not configured by admin', type: 'error' });
+      return;
+    }
+
+    const upiId = settings.upi_id;
+    const amount = repayForm.amount;
+    const payeeName = "GardFund Contribution";
+    const transactionNote = `Loan Repayment - ${selectedLoan?.loan_type} #${selectedLoan?.id}`;
+    
+    let url = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+
+    // App specific schemes
+    if (app === 'phonepe') url = url.replace('upi://', 'phonepe://');
+    if (app === 'gpay') url = url.replace('upi://', 'tez://');
+
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        // Fallback to generic upi if specific app not found
+        if (app !== 'generic') {
+          const genericUrl = url.replace(/^(phonepe|tez):\/\//, 'upi://');
+          await Linking.openURL(genericUrl);
+        } else {
+          showAlert({ title: 'Error', message: 'No UPI app found on this device', type: 'error' });
+        }
+      }
+    } catch (e) {
+      showAlert({ title: 'Error', message: 'Could not open UPI app', type: 'error' });
+    }
+  };
 
   const handleRequestLoan = async () => {
     if (!loanForm.amount || !loanForm.purpose) {
-      Alert.alert('Error', 'Please fill all required fields');
+      showAlert({ title: 'Error', message: 'Please fill all required fields', type: 'error' });
       return;
     }
+
+    if (loanForm.disbursement_method === 'upi' && !user?.upi_id) {
+      showAlert({ title: 'Details Missing', message: 'Please add your UPI ID in your Profile settings before requesting via UPI.', type: 'warning' });
+      return;
+    }
+
+    if (loanForm.disbursement_method === 'bank_account' && (!user?.account_no || !user?.ifsc_code)) {
+      showAlert({ title: 'Details Missing', message: 'Please add your Bank Details in your Profile settings before requesting via Bank Transfer.', type: 'warning' });
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await ApiService.requestLoan({
@@ -59,12 +129,12 @@ export default function LoansScreen() {
         amount: parseFloat(loanForm.amount),
         repayment_months: parseInt(loanForm.repayment_months),
       });
-      Alert.alert('Success', `Loan requested! EMI: ₹${res.data.monthly_emi}/month`);
+      showAlert({ title: 'Success', message: `Loan requested! EMI: ₹${res.data.monthly_emi}/month`, type: 'success' });
       setShowRequestModal(false);
-      setLoanForm({ loan_type: 'emergency', amount: '', purpose: '', repayment_months: '6' });
+      setLoanForm({ loan_type: 'emergency', amount: '', purpose: '', repayment_months: '6', disbursement_method: 'bank_account' });
       fetchLoans();
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      showAlert({ title: 'Error', message: e.message, type: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -72,7 +142,7 @@ export default function LoansScreen() {
 
   const handleRepay = async () => {
     if (!repayForm.amount) {
-      Alert.alert('Error', 'Enter repayment amount');
+      showAlert({ title: 'Error', message: 'Enter repayment amount', type: 'error' });
       return;
     }
     setSubmitting(true);
@@ -83,12 +153,12 @@ export default function LoansScreen() {
         payment_method: repayForm.payment_method,
         transaction_ref: repayForm.transaction_ref,
       });
-      Alert.alert('Success', 'Repayment submitted for approval');
+      showAlert({ title: 'Success', message: 'Repayment submitted for approval', type: 'success' });
       setShowRepayModal(false);
       setRepayForm({ amount: '', payment_method: 'upi', transaction_ref: '' });
       fetchLoans();
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      showAlert({ title: 'Error', message: e.message, type: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -225,7 +295,14 @@ export default function LoansScreen() {
 
                   <TouchableOpacity
                     style={styles.repayButton}
-                    onPress={() => { setSelectedLoan(loan); setShowRepayModal(true); }}
+                    onPress={() => { 
+                      setSelectedLoan(loan); 
+                      const emi = parseFloat(loan.monthly_emi);
+                      const remaining = parseFloat(loan.remaining_amount);
+                      const amountToPay = Math.min(emi, remaining);
+                      setRepayForm({ ...repayForm, amount: amountToPay.toFixed(2) });
+                      setShowRepayModal(true); 
+                    }}
                   >
                     <Text style={styles.repayText}>Make Repayment</Text>
                     <Ionicons name="arrow-forward" size={16} color={Colors.primary} />
@@ -249,7 +326,8 @@ export default function LoansScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.fieldLabel}>Loan Type</Text>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+              <Text style={styles.fieldLabel}>Loan Type</Text>
             <View style={styles.typeGrid}>
               {[
                 { key: 'emergency', icon: 'flash', label: 'Emergency', color: Colors.error },
@@ -285,6 +363,23 @@ export default function LoansScreen() {
               ))}
             </View>
 
+            <Text style={styles.fieldLabel}>Receive Via</Text>
+            <View style={styles.typeGrid}>
+              {[
+                { key: 'bank_account', icon: 'business-outline', label: 'Bank Acc' },
+                { key: 'upi', icon: 'phone-portrait-outline', label: 'UPI' },
+              ].map(type => (
+                <TouchableOpacity
+                  key={type.key}
+                  style={[styles.typeItem, loanForm.disbursement_method === type.key && { borderColor: Colors.primary }]}
+                  onPress={() => setLoanForm({ ...loanForm, disbursement_method: type.key })}
+                >
+                  <Ionicons name={type.icon as any} size={24} color={loanForm.disbursement_method === type.key ? Colors.primary : Colors.dark.textMuted} />
+                  <Text style={[styles.typeText, loanForm.disbursement_method === type.key && { color: Colors.primary }]}>{type.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             {loanForm.amount && (
               <View style={styles.emiPreview}>
                 <Text style={styles.emiLabel}>Estimated EMI</Text>
@@ -294,11 +389,12 @@ export default function LoansScreen() {
               </View>
             )}
 
-            <TouchableOpacity style={[styles.submitBtn, submitting && { opacity: 0.7 }]} onPress={handleRequestLoan} disabled={submitting}>
-              <LinearGradient colors={Colors.gradients.primary as any} style={styles.submitGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Submit Request</Text>}
-              </LinearGradient>
-            </TouchableOpacity>
+              <TouchableOpacity style={[styles.submitBtn, submitting && { opacity: 0.7 }]} onPress={handleRequestLoan} disabled={submitting}>
+                <LinearGradient colors={Colors.gradients.primary as any} style={styles.submitGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                  {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Submit Request</Text>}
+                </LinearGradient>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -313,21 +409,47 @@ export default function LoansScreen() {
                 <Ionicons name="close" size={24} color={Colors.dark.text} />
               </TouchableOpacity>
             </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
             {selectedLoan && (
               <View style={styles.emiPreview}>
-                <Text style={styles.emiLabel}>Remaining: ₹{parseFloat(selectedLoan.remaining_amount).toLocaleString()}</Text>
-                <Text style={styles.emiValue}>EMI: ₹{parseFloat(selectedLoan.monthly_emi).toLocaleString()}</Text>
+                {parseFloat(selectedLoan.remaining_amount) < parseFloat(selectedLoan.monthly_emi) ? (
+                  <>
+                    <Text style={styles.emiLabel}>EMI: ₹{parseFloat(selectedLoan.monthly_emi).toLocaleString()}</Text>
+                    <Text style={styles.emiValue}>Payable: ₹{parseFloat(selectedLoan.remaining_amount).toLocaleString()}</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.emiLabel}>Remaining: ₹{parseFloat(selectedLoan.remaining_amount).toLocaleString()}</Text>
+                    <Text style={styles.emiValue}>EMI: ₹{parseFloat(selectedLoan.monthly_emi).toLocaleString()}</Text>
+                  </>
+                )}
               </View>
             )}
             <Text style={styles.fieldLabel}>Amount (₹)</Text>
-            <TextInput style={styles.modalInput} placeholder="Enter amount" placeholderTextColor={Colors.dark.textMuted} value={repayForm.amount} onChangeText={v => setRepayForm({ ...repayForm, amount: v })} keyboardType="numeric" />
+            <TextInput style={[styles.modalInput, { opacity: 0.8 }]} placeholder="Enter amount" placeholderTextColor={Colors.dark.textMuted} value={repayForm.amount} editable={false} keyboardType="numeric" />
+            
+            <View style={styles.upiAppRow}>
+              <TouchableOpacity style={styles.upiAppButton} onPress={() => handleOpenUPI('phonepe')}>
+                <LinearGradient colors={['#5f259f', '#4b1d7e']} style={styles.upiAppGradient}>
+                  <Text style={styles.upiAppText}>PhonePe</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.upiAppButton} onPress={() => handleOpenUPI('gpay')}>
+                <LinearGradient colors={['#4285F4', '#34a853']} style={styles.upiAppGradient}>
+                  <Text style={styles.upiAppText}>GPay</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
             <Text style={styles.fieldLabel}>Transaction Reference</Text>
+
             <TextInput style={styles.modalInput} placeholder="UPI/Bank ref" placeholderTextColor={Colors.dark.textMuted} value={repayForm.transaction_ref} onChangeText={v => setRepayForm({ ...repayForm, transaction_ref: v })} />
             <TouchableOpacity style={[styles.submitBtn, submitting && { opacity: 0.7 }]} onPress={handleRepay} disabled={submitting}>
               <LinearGradient colors={Colors.gradients.secondary as any} style={styles.submitGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                 {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Submit Repayment</Text>}
               </LinearGradient>
             </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -417,4 +539,9 @@ const styles = StyleSheet.create({
   submitBtn: { borderRadius: 14, overflow: 'hidden', marginTop: 8 },
   submitGradient: { justifyContent: 'center', alignItems: 'center', paddingVertical: 16 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  upiAppRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  upiAppButton: { flex: 1, borderRadius: 12, overflow: 'hidden' },
+  upiAppGradient: { paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
+  upiAppText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 });
+

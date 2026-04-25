@@ -7,6 +7,8 @@ export const ENDPOINTS = {
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
   PROFILE: '/auth/profile',
+  UPLOAD_AVATAR: '/auth/upload_avatar',
+
 
   // Members
   MEMBERS: '/members/list',
@@ -31,8 +33,10 @@ export const ENDPOINTS = {
   LEVELS: '/levels/index',
 
   // Admin
-  ADMIN_DASHBOARD: '/apanel/dashboard',
-  ADMIN_APPROVE_CONTRIBUTION: '/apanel/approve_contribution',
-  ADMIN_APPROVE_LOAN: '/apanel/approve_loan',
-  ADMIN_APPROVE_REPAYMENT: '/apanel/approve_repayment',
+  ADMIN_DASHBOARD: '/admin/dashboard',
+  ADMIN_APPROVE_CONTRIBUTION: '/admin/approve_contribution',
+  ADMIN_APPROVE_LOAN: '/admin/approve_loan',
+  ADMIN_APPROVE_REPAYMENT: '/admin/approve_repayment',
+  ADMIN_APPROVE_USER: '/admin/approve_user',
+  ADMIN_SETTINGS: '/admin/settings',
 };

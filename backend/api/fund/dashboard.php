@@ -35,9 +35,10 @@ $stmt->execute([$currentMonth]);
 $monthlyStats = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // Recent transactions
+$txLimit = isset($_GET['limit']) ? (int)$_GET['limit'] : 12;
 $stmt = $db->query("SELECT ft.*, u.full_name, u.member_id FROM fund_transactions ft 
     LEFT JOIN users u ON ft.user_id = u.id 
-    ORDER BY ft.created_at DESC LIMIT 10");
+    ORDER BY ft.created_at DESC LIMIT $txLimit");
 $recentTransactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Monthly trend (last 6 months)

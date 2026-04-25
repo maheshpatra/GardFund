@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $data = getRequestBody();
-validateRequired($data, ['full_name', 'email', 'phone', 'password']);
+validateRequired($data, ['full_name', 'email', 'phone', 'password', 'aadhaar_no', 'pan_number']);
 
 $db = (new Database())->getConnection();
 
@@ -30,7 +30,7 @@ if ($count['total'] >= 100) {
 $memberId = generateMemberId($db);
 $passwordHash = password_hash($data['password'], PASSWORD_BCRYPT);
 
-$stmt = $db->prepare("INSERT INTO users (member_id, full_name, email, phone, password_hash, address, date_of_birth, emergency_contact, occupation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+$stmt = $db->prepare("INSERT INTO users (member_id, full_name, email, phone, password_hash, address, date_of_birth, emergency_contact, occupation, aadhaar_no, pan_number, is_active, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)");
 
 $stmt->execute([
     $memberId,
@@ -41,7 +41,9 @@ $stmt->execute([
     $data['address'] ?? null,
     $data['date_of_birth'] ?? null,
     $data['emergency_contact'] ?? null,
-    $data['occupation'] ?? null
+    $data['occupation'] ?? null,
+    $data['aadhaar_no'],
+    $data['pan_number']
 ]);
 
 $userId = $db->lastInsertId();
@@ -58,19 +60,7 @@ $token = JWTHandler::generateToken([
 addPoints($db, $userId, 10, 'registration', 'Welcome bonus for joining GardFund');
 
 // Create welcome notification
-createNotification($db, $userId, 'Welcome to GardFund! 🎉', 'Welcome aboard! Your member ID is ' . $memberId . '. Start your journey by making your first contribution.', 'general');
+createNotification($db, $userId, 'Welcome to GardFund! 🎉', 'Welcome aboard! Your member ID is ' . $memberId . ' (Pending Approval).', 'general');
 
-sendSuccess([
-    'token' => $token,
-    'user' => [
-        'id' => $userId,
-        'member_id' => $memberId,
-        'full_name' => $data['full_name'],
-        'email' => $data['email'],
-        'phone' => $data['phone'],
-        'role' => 'member',
-        'level_id' => 1,
-        'total_points' => 10
-    ]
-], 'Registration successful', 201);
+sendSuccess(null, 'Registration successful. Waiting for admin approval.', 201);
 ?>

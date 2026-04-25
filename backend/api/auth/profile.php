@@ -7,7 +7,7 @@ $user = authenticate();
 $db = (new Database())->getConnection();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $stmt = $db->prepare("SELECT u.id, u.member_id, u.full_name, u.email, u.phone, u.avatar_url, u.address, u.date_of_birth, u.emergency_contact, u.occupation, u.role, u.level_id, u.total_points, u.is_active, u.is_verified, u.joined_at, u.last_login,
+    $stmt = $db->prepare("SELECT u.id, u.member_id, u.full_name, u.email, u.phone, u.avatar_url, u.address, u.date_of_birth, u.emergency_contact, u.occupation, u.bank_name, u.account_no, u.ifsc_code, u.upi_id, u.role, u.level_id, u.total_points, u.is_active, u.is_verified, u.joined_at, u.last_login,
         l.level_name, l.level_number, l.badge_color, l.badge_icon, l.max_loan_amount, l.benefits,
         (SELECT COUNT(*) FROM contributions WHERE user_id = u.id AND status = 'confirmed') as total_contributions,
         (SELECT COALESCE(SUM(amount), 0) FROM contributions WHERE user_id = u.id AND status = 'confirmed') as total_contributed,
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $data = getRequestBody();
     
-    $allowed = ['full_name', 'phone', 'address', 'date_of_birth', 'emergency_contact', 'occupation', 'avatar_url'];
+    $allowed = ['full_name', 'phone', 'address', 'date_of_birth', 'emergency_contact', 'occupation', 'avatar_url', 'bank_name', 'account_no', 'ifsc_code', 'upi_id'];
     $updates = [];
     $params = [];
     

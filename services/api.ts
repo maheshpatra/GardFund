@@ -19,6 +19,10 @@ class ApiService {
     }
   }
 
+  static getBaseUrl() {
+    return API_BASE_URL.replace('/api', '');
+  }
+
   static async request(endpoint: string, method: string = 'GET', body?: any, params?: Record<string, string>) {
     const token = await this.getToken();
     let url = `${API_BASE_URL}${endpoint}`;
@@ -43,10 +47,17 @@ class ApiService {
         body: body ? JSON.stringify(body) : undefined,
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        console.error('API Parse Error:', responseText);
+        throw new Error('Invalid server response');
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
+        throw new Error(data.message || data.error || 'Something went wrong');
       }
 
       return data;
@@ -76,6 +87,47 @@ class ApiService {
   }
 
   // Members
+  static async uploadAvatar(fileData: { uri: string, type: string, name: string }) {
+    const token = await this.getToken();
+    const url = `${API_BASE_URL}${ENDPOINTS.UPLOAD_AVATAR}`;
+
+    const formData = new FormData();
+    formData.append('avatar', {
+      uri: fileData.uri,
+      type: fileData.type,
+      name: fileData.name,
+    } as any);
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      const responseText = await response.text();
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        throw new Error('Invalid server response');
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Upload failed');
+      }
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static getMembers(page = 1, search = '') {
     return this.request(ENDPOINTS.MEMBERS, 'GET', undefined, { page: String(page), search });
   }
@@ -107,8 +159,8 @@ class ApiService {
   }
 
   // Fund
-  static getFundDashboard() {
-    return this.request(ENDPOINTS.FUND_DASHBOARD);
+  static getFundDashboard(limit = 12) {
+    return this.request(ENDPOINTS.FUND_DASHBOARD, 'GET', undefined, { limit: String(limit) });
   }
 
   // Hospitals
@@ -149,9 +201,19 @@ class ApiService {
   }
 
   static approveRepayment(repaymentId: number, action: string) {
-    return this.request(ENDPOINTS.ADMIN_APPROVE_REPAYMENT, 'POST', {
-      repayment_id: repaymentId, action
-    });
+    return this.request(ENDPOINTS.ADMIN_APPROVE_REPAYMENT, 'POST', { repayment_id: repaymentId, action });
+  }
+
+  static approveUser(userId: number, action: string) {
+    return this.request(ENDPOINTS.ADMIN_APPROVE_USER, 'POST', { target_user_id: userId, action });
+  }
+
+  static getSettings() {
+    return this.request(ENDPOINTS.ADMIN_SETTINGS);
+  }
+
+  static updateSettings(data: any) {
+    return this.request(ENDPOINTS.ADMIN_SETTINGS, 'POST', data);
   }
 }
 

@@ -9,7 +9,7 @@ $db = (new Database())->getConnection();
 // POST - Request a loan
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = getRequestBody();
-    validateRequired($data, ['loan_type', 'amount', 'purpose', 'repayment_months']);
+    validateRequired($data, ['loan_type', 'amount', 'purpose', 'repayment_months', 'disbursement_method']);
     
     // Check user level and max loan amount
     $stmt = $db->prepare("SELECT u.level_id, l.max_loan_amount, l.level_name FROM users u JOIN levels l ON u.level_id = l.id WHERE u.id = ?");
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $monthlyEmi = round($data['amount'] / $data['repayment_months'], 2);
     $dueDate = date('Y-m-d', strtotime('+' . $data['repayment_months'] . ' months'));
     
-    $stmt = $db->prepare("INSERT INTO loans (user_id, loan_type, amount, purpose, repayment_months, monthly_emi, remaining_amount, due_date, guarantor_id, documents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $db->prepare("INSERT INTO loans (user_id, loan_type, amount, purpose, repayment_months, monthly_emi, remaining_amount, due_date, guarantor_id, documents, disbursement_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $user['user_id'],
         $data['loan_type'],
@@ -48,7 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data['amount'],
         $dueDate,
         $data['guarantor_id'] ?? null,
-        $data['documents'] ?? null
+        $data['documents'] ?? null,
+        $data['disbursement_method']
     ]);
     
     $loanId = $db->lastInsertId();

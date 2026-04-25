@@ -27,7 +27,7 @@ if ($search) {
 $stmt = $db->prepare("SELECT u.id, u.member_id, u.full_name, u.email, u.phone, u.avatar_url, u.occupation, u.role, u.level_id, u.total_points, u.joined_at,
     l.level_name, l.badge_color, l.badge_icon,
     (SELECT COUNT(*) FROM contributions WHERE user_id = u.id AND status = 'confirmed') as contributions_count
-    FROM users u LEFT JOIN levels l ON u.level_id = l.id $where ORDER BY u.member_id ASC LIMIT $limit OFFSET $offset");
+    FROM users u LEFT JOIN levels l ON u.level_id = l.id $where ORDER BY u.total_points DESC, u.member_id ASC LIMIT $limit OFFSET $offset");
 $stmt->execute($params);
 $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

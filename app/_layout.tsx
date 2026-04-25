@@ -44,7 +44,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AlertProvider>
           <AuthGuard>
-            <View style={{ flex: 1, backgroundColor: Colors.dark.background, paddingTop: statusBarHeight }}>
+            <View style={{ flex: 1, backgroundColor: Colors.dark.background }}>
               <ExpoStatusBar style="light" translucent={true} />
               <Stack
                 screenOptions={{

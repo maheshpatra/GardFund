@@ -12,7 +12,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../constants/Colors';
+
 import { useAuth } from '../../contexts/AuthContext';
 import ApiService from '../../services/api';
 
@@ -29,11 +31,12 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
+  const [recentLimit, setRecentLimit] = useState(12);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (limit = 12) => {
     try {
       const [fundRes, notifRes] = await Promise.all([
-        ApiService.getFundDashboard(),
+        ApiService.getFundDashboard(limit),
         ApiService.getNotifications(true),
       ]);
       setDashboard(fundRes.data);
@@ -48,11 +51,20 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     if (user) {
-      fetchData();
+      fetchData(recentLimit);
     }
   }, [fetchData, user]);
 
-  const onRefresh = () => { setRefreshing(true); fetchData(); };
+  const loadMoreActivity = async () => {
+    const newLimit = recentLimit + 12;
+    setRecentLimit(newLimit);
+    try {
+       const res = await ApiService.getFundDashboard(newLimit);
+       setDashboard((prev: any) => ({ ...prev, recent_transactions: res.data.recent_transactions }));
+    } catch(e) { console.log(e); }
+  };
+
+  const onRefresh = () => { setRefreshing(true); fetchData(recentLimit); };
 
   const formatCurrency = (amount: number) => {
     return '₹' + (amount || 0).toLocaleString('en-IN');
@@ -78,11 +90,12 @@ export default function DashboardScreen() {
   if (!user) return null;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
       >
+
         {/* Header */}
         <View style={styles.header}>
           <View>
@@ -217,7 +230,7 @@ export default function DashboardScreen() {
               <Text style={styles.emptyText}>No transactions yet</Text>
             </View>
           ) : (
-            (dashboard?.recent_transactions || []).slice(0, 5).map((tx: any, index: number) => (
+            (dashboard?.recent_transactions || []).map((tx: any, index: number) => (
               <View key={index} style={styles.transactionItem}>
                 <View style={[
                   styles.txIcon,
@@ -242,11 +255,20 @@ export default function DashboardScreen() {
               </View>
             ))
           )}
+
+          {(dashboard?.recent_transactions || []).length >= recentLimit && (
+            <TouchableOpacity 
+              style={{ marginTop: 12, paddingVertical: 12, alignItems: 'center', backgroundColor: Colors.dark.inputBg, borderRadius: 12, borderWidth: 1, borderColor: Colors.dark.border }} 
+              onPress={loadMoreActivity}
+            >
+              <Text style={{ color: Colors.primary, fontWeight: '700', fontSize: 13 }}>Load Next</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={{ height: 20 }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
