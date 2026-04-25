@@ -1,7 +1,7 @@
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StatusBar, Platform } from 'react-native';
+import { ActivityIndicator, Platform, StatusBar, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Colors from '../constants/Colors';
 import { AlertProvider } from '../contexts/AlertContext';
@@ -37,14 +37,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
-  const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight : 0;
-
   return (
     <AuthProvider>
       <SafeAreaProvider>
         <AlertProvider>
           <AuthGuard>
-            <View style={{ flex: 1, backgroundColor: Colors.dark.background, paddingTop: statusBarHeight }}>
+            <View style={{ flex: 1, backgroundColor: Colors.dark.background }}>
               <ExpoStatusBar style="light" translucent={true} />
               <Stack
                 screenOptions={{
@@ -55,61 +53,11 @@ export default function RootLayout() {
               >
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="loans"
-                  options={{
-                    headerShown: true,
-                    title: 'Loans',
-                    headerStyle: { backgroundColor: Colors.dark.surface },
-                    headerTintColor: Colors.dark.text,
-                    headerTitleStyle: { fontWeight: '700' },
-                    headerTitleAlign: 'center',
-                  }}
-                />
-                <Stack.Screen
-                  name="hospitals"
-                  options={{
-                    headerShown: true,
-                    title: 'Hospital Directory',
-                    headerStyle: { backgroundColor: Colors.dark.surface },
-                    headerTintColor: Colors.dark.text,
-                    headerTitleStyle: { fontWeight: '700' },
-                    headerTitleAlign: 'center',
-                  }}
-                />
-                <Stack.Screen
-                  name="notifications"
-                  options={{
-                    headerShown: true,
-                    title: 'Notifications',
-                    headerStyle: { backgroundColor: Colors.dark.surface },
-                    headerTintColor: Colors.dark.text,
-                    headerTitleStyle: { fontWeight: '700' },
-                    headerTitleAlign: 'center',
-                  }}
-                />
-                <Stack.Screen
-                  name="levels"
-                  options={{
-                    headerShown: true,
-                    title: 'Level & Rewards',
-                    headerStyle: { backgroundColor: Colors.dark.surface },
-                    headerTintColor: Colors.dark.text,
-                    headerTitleStyle: { fontWeight: '700' },
-                    headerTitleAlign: 'center',
-                  }}
-                />
-                <Stack.Screen
-                  name="admin"
-                  options={{
-                    headerShown: true,
-                    title: 'Admin Panel',
-                    headerStyle: { backgroundColor: Colors.dark.surface },
-                    headerTintColor: Colors.dark.text,
-                    headerTitleStyle: { fontWeight: '700' },
-                    headerTitleAlign: 'center',
-                  }}
-                />
+                <Stack.Screen name="loans" options={{ headerShown: false }} />
+                <Stack.Screen name="hospitals" options={{ headerShown: false }} />
+                <Stack.Screen name="notifications" options={{ headerShown: false }} />
+                <Stack.Screen name="levels" options={{ headerShown: false }} />
+                <Stack.Screen name="admin" options={{ headerShown: false }} />
               </Stack>
             </View>
           </AuthGuard>

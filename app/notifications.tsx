@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
 import Colors from '../constants/Colors';
+import CustomHeader from '../components/CustomHeader';
 
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -77,6 +78,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
+      <CustomHeader title="Notifications" />
       {unreadCount > 0 && (
         <TouchableOpacity style={styles.markAllBtn} onPress={markAllRead}>
           <Ionicons name="checkmark-done" size={16} color={Colors.primary} />

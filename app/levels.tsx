@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
 import Colors from '../constants/Colors';
+import CustomHeader from '../components/CustomHeader';
 
 export default function LevelsScreen() {
   const [data, setData] = useState<any>(null);
@@ -55,6 +56,7 @@ export default function LevelsScreen() {
 
   return (
     <View style={styles.container}>
+      <CustomHeader title="Level & Rewards" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
         {/* Current Points */}
         <LinearGradient

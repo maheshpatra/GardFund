@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import ApiService from '../services/api';
 import Colors from '../constants/Colors';
+import CustomHeader from '../components/CustomHeader';
 
 export default function HospitalsScreen() {
   const [hospitals, setHospitals] = useState<any[]>([]);
@@ -127,6 +128,7 @@ export default function HospitalsScreen() {
 
   return (
     <View style={styles.container}>
+      <CustomHeader title="Hospitals" />
       {/* Search */}
       <View style={styles.searchContainer}>
         <View style={styles.searchWrapper}>

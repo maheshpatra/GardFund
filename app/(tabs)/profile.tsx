@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import ApiService from '../../services/api';
 import Colors from '../../constants/Colors';
+import CustomHeader from '../../components/CustomHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAlert } from '../../contexts/AlertContext';
@@ -69,6 +70,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      <CustomHeader title="My Profile" showBack={false} />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
         <LinearGradient

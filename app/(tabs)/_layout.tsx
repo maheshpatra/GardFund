@@ -1,12 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 import Colors from '../../constants/Colors';
 
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
-
   return (
     <Tabs
       screenOptions={{
@@ -17,23 +14,16 @@ export default function TabLayout() {
           backgroundColor: Colors.dark.surface,
           borderTopColor: Colors.dark.border,
           borderTopWidth: 1,
-          height: 65 + (insets.bottom > 0 ? insets.bottom : 10),
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
-          paddingTop: 12,
-          elevation: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 10,
+          height: 98,
+          paddingBottom: 28,
+          paddingTop: 5,
+          elevation: 0,
         },
         tabBarLabelStyle: {
           fontSize: 11,
+          marginTop: 3,
           fontWeight: '600',
-          marginBottom: 4,
         },
-        tabBarIconStyle: {
-          marginTop: 0,
-        }
       }}
     >
       <Tabs.Screen
@@ -41,7 +31,9 @@ export default function TabLayout() {
         options={{
           title: 'Dashboard',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "grid" : "grid-outline"} size={24} color={color} />
+            <View style={focused ? styles.activeIconWrap : undefined}>
+              <Ionicons name={focused ? "grid" : "grid-outline"} size={24} color={color} />
+            </View>
           ),
         }}
       />
@@ -50,7 +42,9 @@ export default function TabLayout() {
         options={{
           title: 'Members',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={24} color={color} />
+            <View style={focused ? styles.activeIconWrap : undefined}>
+              <Ionicons name={focused ? "people" : "people-outline"} size={24} color={color} />
+            </View>
           ),
         }}
       />
@@ -59,7 +53,9 @@ export default function TabLayout() {
         options={{
           title: 'Fund',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "wallet" : "wallet-outline"} size={24} color={color} />
+            <View style={focused ? styles.activeIconWrap : undefined}>
+              <Ionicons name={focused ? "wallet" : "wallet-outline"} size={24} color={color} />
+            </View>
           ),
         }}
       />
@@ -68,7 +64,9 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
+            <View style={focused ? styles.activeIconWrap : undefined}>
+              <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
+            </View>
           ),
         }}
       />
@@ -77,7 +75,11 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  activeIconWrap: {
+    backgroundColor: Colors.primaryGlow,
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    marginBottom: -4,
   },
 });

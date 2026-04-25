@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
 import Colors from '../constants/Colors';
+import CustomHeader from '../components/CustomHeader';
 
 export default function LoansScreen() {
   const [loans, setLoans] = useState<any[]>([]);
@@ -107,6 +108,7 @@ export default function LoansScreen() {
 
   return (
     <View style={styles.container}>
+      <CustomHeader title="Loans" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchLoans(); }} tintColor={Colors.primary} />}

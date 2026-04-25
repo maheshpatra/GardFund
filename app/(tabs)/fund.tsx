@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAlert } from '../../contexts/AlertContext';
 import ApiService from '../../services/api';
 import Colors from '../../constants/Colors';
+import CustomHeader from '../../components/CustomHeader';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -118,15 +119,8 @@ export default function FundScreen() {
 
   return (
     <View style={styles.container}>
+      <CustomHeader title="Contributions" showBack={false} />
       <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Contributions</Text>
-          <Text style={styles.subtitle}>₹1,000 / month</Text>
-        </View>
 
         {/* Summary Card */}
         <LinearGradient
@@ -310,7 +304,6 @@ export default function FundScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
-  header: { paddingHorizontal: 20, paddingBottom: 8, paddingTop: 10 },
   title: { fontSize: 28, fontWeight: '800', color: Colors.dark.text },
   subtitle: { fontSize: 14, color: Colors.dark.textSecondary, marginTop: 2 },
   summaryCard: {

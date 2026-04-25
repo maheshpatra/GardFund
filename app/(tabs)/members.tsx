@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import ApiService from '../../services/api';
 import Colors from '../../constants/Colors';
+import CustomHeader from '../../components/CustomHeader';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -112,14 +113,15 @@ export default function MembersScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Members</Text>
-        <View style={styles.countBadge}>
-          <Ionicons name="people" size={14} color={Colors.primary} />
-          <Text style={styles.countText}>{totalMembers}/100</Text>
-        </View>
-      </View>
+      <CustomHeader 
+        title="Members" 
+        showBack={false} 
+        rightAction={
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{totalMembers}</Text>
+          </View>
+        }
+      />
 
       {/* Search */}
       <View style={styles.searchContainer}>
@@ -164,14 +166,9 @@ export default function MembersScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingBottom: 8, paddingTop: 10,
-  },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.dark.text },
   countBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.primaryGlow, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+    backgroundColor: Colors.primaryGlow, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10,
   },
   countText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
   searchContainer: { paddingHorizontal: 20, paddingVertical: 12 },

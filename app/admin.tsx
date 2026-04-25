@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
 import Colors from '../constants/Colors';
+import CustomHeader from '../components/CustomHeader';
 
 export default function AdminScreen() {
   const [data, setData] = useState<any>(null);
@@ -104,6 +105,7 @@ export default function AdminScreen() {
 
   return (
     <View style={styles.container}>
+      <CustomHeader title="Admin Panel" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={Colors.primary} />}
