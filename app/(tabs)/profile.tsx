@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Colors from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 import ApiService from '../../services/api';
-import Colors from '../../constants/Colors';
-import CustomHeader from '../../components/CustomHeader';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAlert } from '../../contexts/AlertContext';
 
@@ -70,7 +73,6 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <CustomHeader title="My Profile" showBack={false} />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
         <LinearGradient

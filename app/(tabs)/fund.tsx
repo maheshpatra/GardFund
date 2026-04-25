@@ -1,17 +1,23 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Modal, TextInput, ActivityIndicator, Alert, Platform
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../contexts/AuthContext';
-import { useAlert } from '../../contexts/AlertContext';
-import ApiService from '../../services/api';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import Colors from '../../constants/Colors';
-import CustomHeader from '../../components/CustomHeader';
+import { useAlert } from '../../contexts/AlertContext';
+import { useAuth } from '../../contexts/AuthContext';
+import ApiService from '../../services/api';
 
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -42,9 +48,9 @@ export default function FundScreen() {
     }
   }, [selectedYear]);
 
-  useEffect(() => { 
+  useEffect(() => {
     if (user) {
-      fetchContributions(); 
+      fetchContributions();
     }
   }, [fetchContributions, user]);
 
@@ -119,8 +125,15 @@ export default function FundScreen() {
 
   return (
     <View style={styles.container}>
-      <CustomHeader title="Contributions" showBack={false} />
       <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Contributions</Text>
+          <Text style={styles.subtitle}>₹1,000 / month</Text>
+        </View>
 
         {/* Summary Card */}
         <LinearGradient
@@ -304,6 +317,7 @@ export default function FundScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
+  header: { paddingHorizontal: 20, paddingBottom: 8, paddingTop: 10 },
   title: { fontSize: 28, fontWeight: '800', color: Colors.dark.text },
   subtitle: { fontSize: 14, color: Colors.dark.textSecondary, marginTop: 2 },
   summaryCard: {

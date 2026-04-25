@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, ActivityIndicator
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import ApiService from '../services/api';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native';
 import Colors from '../constants/Colors';
-import CustomHeader from '../components/CustomHeader';
+import ApiService from '../services/api';
 
 export default function LevelsScreen() {
   const [data, setData] = useState<any>(null);
@@ -56,7 +59,6 @@ export default function LevelsScreen() {
 
   return (
     <View style={styles.container}>
-      <CustomHeader title="Level & Rewards" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
         {/* Current Points */}
         <LinearGradient

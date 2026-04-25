@@ -1,13 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Modal, TextInput, Alert, ActivityIndicator
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import ApiService from '../services/api';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import Colors from '../constants/Colors';
-import CustomHeader from '../components/CustomHeader';
+import ApiService from '../services/api';
 
 export default function LoansScreen() {
   const [loans, setLoans] = useState<any[]>([]);
@@ -108,7 +115,6 @@ export default function LoansScreen() {
 
   return (
     <View style={styles.container}>
-      <CustomHeader title="Loans" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchLoans(); }} tintColor={Colors.primary} />}

@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, Linking, ActivityIndicator
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import ApiService from '../services/api';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Linking,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import Colors from '../constants/Colors';
-import CustomHeader from '../components/CustomHeader';
+import ApiService from '../services/api';
 
 export default function HospitalsScreen() {
   const [hospitals, setHospitals] = useState<any[]>([]);
@@ -128,7 +132,6 @@ export default function HospitalsScreen() {
 
   return (
     <View style={styles.container}>
-      <CustomHeader title="Hospitals" />
       {/* Search */}
       <View style={styles.searchContainer}>
         <View style={styles.searchWrapper}>

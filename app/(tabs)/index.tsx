@@ -7,12 +7,10 @@ import {
   Dimensions,
   RefreshControl,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
-  Platform
+  View
 } from 'react-native';
 import Colors from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
@@ -86,7 +84,7 @@ export default function DashboardScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
       >
         {/* Header */}
-        <View style={[styles.header, { paddingTop: (Platform.OS === 'android' ? StatusBar.currentHeight : 0) || 10 }]}>
+        <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Hello, {user.full_name?.split(' ')[0]} 👋</Text>
             <Text style={styles.memberId}>ID: {user.member_id}</Text>
@@ -256,7 +254,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.dark.background },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingBottom: 16,
+    paddingHorizontal: 20, paddingBottom: 16, paddingTop: 10,
   },
   greeting: { fontSize: 22, fontWeight: '700', color: Colors.dark.text },
   memberId: { fontSize: 13, color: Colors.dark.textSecondary, marginTop: 2 },

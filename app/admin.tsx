@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Alert, ActivityIndicator
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import ApiService from '../services/api';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import Colors from '../constants/Colors';
-import CustomHeader from '../components/CustomHeader';
+import ApiService from '../services/api';
 
 export default function AdminScreen() {
   const [data, setData] = useState<any>(null);
@@ -105,7 +109,6 @@ export default function AdminScreen() {
 
   return (
     <View style={styles.container}>
-      <CustomHeader title="Admin Panel" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={Colors.primary} />}
